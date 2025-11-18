@@ -37,3 +37,9 @@
     --font-grotesque: 'Bricolage Grotesque', sans-serif;
     --font-dm-sans: 'DM Sans', sans-serif;
 }
+
+@utility scrollbar-hidden {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

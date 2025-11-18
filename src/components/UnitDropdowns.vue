@@ -1,5 +1,5 @@
 <!-- UnitDropdowns.vue -->
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import DropdownList from '@/components/DropdownList.vue'
 

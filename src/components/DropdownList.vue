@@ -23,25 +23,24 @@
     </div>
 
     <!-- Panel -->
-    <div
+    <ul
       v-show="open"
-      class="absolute z-50 mt-2 w-full rounded-lg border border-gray-200 bg-neutral-800 shadow-lg"
+      class="absolute z-50 mt-2 w-[214px] max-w-[214px] rounded-lg border border-gray-200 bg-neutral-800 shadow-lg scrollbar-hidden divide-y-2 divide-neutral-700"
       role="listbox"
       :id="listId"
       :style="{ maxHeight, overflow: 'auto' }"
     >
       <!-- Liste groupée -->
       <template v-if="grouped">
-        <div v-for="(groupItems, groupKey) in groupedMap" :key="groupKey">
-          <div class="sticky top-0 backdrop-blur px-3 py-2 text-xs font-semibold text-neutral-300">
+        <li v-for="(groupItems, groupKey) in groupedMap" :key="groupKey" class="w-[93%] mx-auto py-2">
+          <div class="sticky top-0 backdrop-blur px-4 py-2 text-xs font-semibold text-neutral-300 ">
             {{ groupLabel(groupKey) }}
           </div>
           <button
             v-for="(item, idx) in groupItems"
             :key="itemKey(item, idx)"
-            class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-neutral-700"
+            class="flex w-full items-center justify-between px-2 py-2 text-left hover:bg-neutral-700 rounded-md"
             :class="{
-              'bg-blue-50': highlightedIndex === flatIndex(item),
               'text-blue-700': isSelected(item)
             }"
             :id="optionId(flatIndex(item))"
@@ -51,18 +50,19 @@
             @click="select(item)"
           >
             <slot name="item" :item="item">
-              <span class="truncate text-neutral-0">{{ item[labelKey] }}</span>
+              <span class="truncate text-neutral-0 px-2">{{ item[labelKey] }}</span>
+              <img v-if="isSelected(item)" :src="iconCheckmark" alt="check-mark icon pr-4" />
             </slot>
           </button>
-        </div>
+        </li>
       </template>
 
       <!-- Liste simple -->
       <template v-else>
-        <button
+        <li
           v-for="(item, idx) in visibleItems"
           :key="itemKey(item, idx)"
-          class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-neutral-700"
+          class="flex justify-between w-[93%] mx-auto items-center gap-2 mx-auto my-2 px-2 py-2 text-left hover:bg-neutral-700 rounded-md"
           :class="{}"
           :id="optionId(idx)"
           role="option"
@@ -72,20 +72,22 @@
         >
           <slot name="item" :item="item">
             <span class="truncate text-neutral-0">{{ item[labelKey] }}</span>
+            <img v-if="isSelected(item)" :src="iconCheckmark" alt="check-mark icon pr-4" />
           </slot>
-        </button>
+        </li>
       </template>
 
       <div v-if="visibleItems.length === 0" class="px-3 py-3 text-sm text-neutral-0">
         {{ emptyText }}
       </div>
-    </div>
+    </ul>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import Button from './Button.vue'
+import iconCheckmark from '../assets/images/icon-checkmark.svg'
 
 /** Props */
 const props = defineProps({
