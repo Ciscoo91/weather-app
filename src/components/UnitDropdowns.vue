@@ -2,14 +2,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import DropdownList from '@/components/DropdownList.vue'
-
+import Button from './Button.vue'
+import iconUnits from '@/assets/images/icon-units.svg'
+import { type DropdownItem, type UnitItemsType } from '@/types'
 const groups = {
   temp: 'Température',
   wind: 'Vitesse du vent',
   rain: 'Précipitations'
 }
 
-const unitItems = [
+const unitItems : UnitItemsType[] = [
   // Température
   { label: 'Celsius (°C)', value: 'c', group: 'temp' },
   { label: 'Fahrenheit (°F)', value: 'f', group: 'temp' },
@@ -27,20 +29,32 @@ const unitItems = [
   { label: 'pouces (in)', value: 'in', group: 'rain' },
 ]
 
-const selectedUnit = ref(null)
+const open = ref(false)
+const selectedUnit = ref<DropdownItem | null>(null)
+const handleClick = () => {
+  open.value = !open.value
+}
+
+const handleSelect = (item: DropdownItem) => {
+  selectedUnit.value = item
+  open.value = false
+}
+
 </script>
 
 <template>
-  <label class="mb-1 block text-sm font-medium">Unités météo</label>
+  <Button 
+    variant="primary" 
+    @click="handleClick()" 
+    :icon="iconUnits" 
+    icon-position="right">Units</Button>
   <DropdownList
     v-model="selectedUnit"
     :items="unitItems"
     :groups="groups"
     grouped
+    @select="handleSelect"
+    :visible="open"
     placeholder="Choisir une unité…"
   />
-
-  <p class="mt-3 text-sm">
-    Selection: <strong>{{ selectedUnit?.label ?? '—' }}</strong>
-  </p>
 </template>

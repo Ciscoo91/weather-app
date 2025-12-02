@@ -1,216 +1,184 @@
+<!-- weather-app/src/components/DropdownList.vue -->
 <template>
-  <div class="relative inline-block w-full" ref="root" @keydown.stop.prevent="onKeydown" :aria-expanded="open ? 'true' : 'false'">
-    <!-- Trigger / Input -->
-    <div class="flex items-center gap-2">
-      <!-- <input
-        v-if="searchable"
-        v-model="query"
-        :placeholder="placeholder"
-        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        @focus="open = true"
-        @input="emitSearch()"
-        role="combobox"
-        :aria-controls="listId"
-        :aria-activedescendant="activeId"
-      /> -->
-      <Button
-        type="button"
-        class=""
-        @click="toggle"
-      >
-        {{ placeholder }}
-      </Button>
-    </div>
-
-    <!-- Panel -->
+  <transition name="fade">
     <ul
-      v-show="open"
-      class="absolute z-50 mt-2 w-[214px] max-w-[214px] rounded-lg border border-gray-200 bg-neutral-800 shadow-lg scrollbar-hidden divide-y-2 divide-neutral-700"
+      v-if="visible && visibleItems.length"
+      ref="listRef"
+      class=" start-0 top-20 z-50 mt-2 w-[214px] rounded-lg border border-neutral-700 bg-neutral-800 text-sm shadow-xl scrollbar-hidden"
       role="listbox"
-      :id="listId"
-      :style="{ maxHeight, overflow: 'auto' }"
+      :aria-activedescendant="activeId"
+      :style="{ maxHeight, overflowY: 'auto' }"
+      @keydown.stop.prevent="onKeydown"
     >
-      <!-- Liste groupée -->
-      <template v-if="grouped">
-        <li v-for="(groupItems, groupKey) in groupedMap" :key="groupKey" class="w-[93%] mx-auto py-2">
-          <div class="sticky top-0 backdrop-blur px-4 py-2 text-xs font-semibold text-neutral-300 ">
-            {{ groupLabel(groupKey) }}
-          </div>
+      <template v-if="isGrouped">
+        <li v-for="(groupItems, group) in groupedItems" :key="group">
+          <slot name="group-label" :group="group">
+            <div class="sticky top-0 bg-neutral-800/90 px-3 py-2 text-xs font-semibold text-neutral-300">
+              {{ group }}
+            </div>
+          </slot>
+
           <button
             v-for="(item, idx) in groupItems"
             :key="itemKey(item, idx)"
-            class="flex w-full items-center justify-between px-2 py-2 text-left hover:bg-neutral-700 rounded-md"
-            :class="{
-              'text-blue-700': isSelected(item)
-            }"
-            :id="optionId(flatIndex(item))"
+            class="flex w-full items-center justify-between px-3 py-2 text-left text-neutral-100 hover:bg-neutral-700"
+            :class="{ 'text-blue-400': isSelected(item), 'bg-neutral-700': highlightedId === optionId(itemKey(item, idx)) }"
+            type="button"
             role="option"
+            :id="optionId(itemKey(item, idx))"
             :aria-selected="isSelected(item)"
-            @mouseenter="highlightedIndex = flatIndex(item)"
+            @mouseenter="highlight(itemKey(item, idx))"
             @click="select(item)"
           >
-            <slot name="item" :item="item">
-              <span class="truncate text-neutral-0 px-2">{{ item[labelKey] }}</span>
-              <img v-if="isSelected(item)" :src="iconCheckmark" alt="check-mark icon pr-4" />
+            <slot name="item" :item="item" :selected="isSelected(item)">
+              <span class="truncate">{{ item[labelKey] }}</span>
             </slot>
           </button>
         </li>
       </template>
 
-      <!-- Liste simple -->
-      <template v-else>
-        <li
-          v-for="(item, idx) in visibleItems"
-          :key="itemKey(item, idx)"
-          class="flex justify-between w-[93%] mx-auto items-center gap-2 mx-auto my-2 px-2 py-2 text-left hover:bg-neutral-700 rounded-md"
-          :class="{}"
-          :id="optionId(idx)"
-          role="option"
-          :aria-selected="isSelected(item)"
-          @mouseenter="highlightedIndex = idx"
-          @click="select(item)"
-        >
-          <slot name="item" :item="item">
-            <span class="truncate text-neutral-0">{{ item[labelKey] }}</span>
-            <img v-if="isSelected(item)" :src="iconCheckmark" alt="check-mark icon pr-4" />
-          </slot>
-        </li>
+      <template
+          v-else-if="visible && !visibleItems.length"
+          class="absolute z-50  w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-3 text-center text-xs text-neutral-400"
+      >
+          {{ emptyText }}
       </template>
 
-      <div v-if="visibleItems.length === 0" class="px-3 py-3 text-sm text-neutral-0">
-        {{ emptyText }}
-      </div>
+      <template v-else>
+        <button
+          v-for="(item, idx) in visibleItems"
+          :key="itemKey(item, idx)"
+          class="flex w-full items-center justify-between px-3 py-2 text-left text-neutral-100 hover:bg-neutral-700"
+          :class="{ 'text-blue-400': isSelected(item), 'bg-neutral-700': highlightedId === optionId(idx) }"
+          type="button"
+          role="option"
+          :id="optionId(idx)"
+          :aria-selected="isSelected(item)"
+          @mouseenter="highlight(idx)"
+          @click="select(item)"
+        >
+          <slot name="item" :item="item" :selected="isSelected(item)">
+            <span class="truncate">{{ item[labelKey] }}</span>
+          </slot>
+        </button>
+      </template>
+
     </ul>
-  </div>
+  </transition>
+
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import Button from './Button.vue'
-import iconCheckmark from '../assets/images/icon-checkmark.svg'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+/* '@/types' does not export DropdownItem in this project, so define a local type here.
+   Adjust the shape to match your real item structure if needed. */
+import { type DropdownItem } from '@/types'
 
-/** Props */
-const props = defineProps({
-  modelValue: { type: [String, Number, Object, null], default: null },
-  items: { type: Array, default: () => [] },           // [{ label, value, group? }, ...]
-  grouped: { type: Boolean, default: false },
-  labelKey: { type: String, default: 'label' },
-  valueKey: { type: String, default: 'value' },
-  groupKey: { type: String, default: 'group' },
-  groups: { type: Object, default: () => ({}) },       // { groupId: 'Libellé du groupe' }
-  searchable: { type: Boolean, default: false },
-  placeholder: { type: String, default: 'Sélectionner…' },
-  emptyText: { type: String, default: 'Aucun résultat' },
-  maxHeight: { type: String, default: '260px' },
-  highlightFirst: { type: Boolean, default: true },
+const props = withDefaults(
+  defineProps<{
+    items: DropdownItem[]
+    visible: boolean
+    selected?: string | number | null
+    query?: string
+    labelKey?: keyof DropdownItem
+    valueKey?: keyof DropdownItem
+    groupKey?: keyof DropdownItem | null
+    maxHeight?: string
+    emptyText?: string
+  }>(),
+  {
+    query: '',
+    selected: null,
+    labelKey: 'label',
+    valueKey: 'value',
+    groupKey: null,
+    maxHeight: '16rem',
+    emptyText: 'No result',
+  },
+)
+
+const emit = defineEmits<{
+  select: [DropdownItem]
+  'request-close': []
+}>()
+
+const listRef = ref<HTMLElement | null>(null)
+const optionId = (key: number | string) => `dropdown-opt-${key}`
+const highlightedId = ref<string | null>(null)
+const activeId = computed<string | undefined>(() => highlightedId.value ?? undefined)
+
+const normalized = (value?: string) => (value ?? '').toString().toLowerCase()
+const visibleItems = computed(() => {
+  if (!props.query) return props.items
+  const needle = normalized(props.query)
+  return props.items.filter(item => normalized(item[props.labelKey as string]).includes(needle))
 })
 
-const emit = defineEmits(['update:modelValue', 'select', 'open', 'close', 'search'])
-
-/** État */
-const open = ref(false)
-const query = ref('')
-const highlightedIndex = ref(-1)
-const root = ref(null)
-const listId = `list-${Math.random().toString(36).slice(2)}`
-const optionId = (i) => `opt-${listId}-${i}`
-const activeId = computed(() => (highlightedIndex.value >= 0 ? optionId(highlightedIndex.value) : undefined))
-
-/** Items filtrés */
-const normalized = (s) => (s ?? '').toString().toLowerCase()
-const filteredItems = computed(() => {
-  if (!props.searchable || !query.value) return props.items
-  const q = normalized(query.value)
-  return props.items.filter((it) => normalized(it[props.labelKey]).includes(q))
+const isGrouped = computed(() => Boolean(props.groupKey))
+const groupedItems = computed<Record<string, DropdownItem[]>>(() => {
+  if (!isGrouped.value) return {}
+  const key = props.groupKey as keyof DropdownItem
+  return visibleItems.value.reduce((groups, item) => {
+    const g = (item[key] ?? '_').toString()
+    if (!groups[g]) groups[g] = []
+    groups[g].push(item)
+    return groups
+  }, {} as Record<string, DropdownItem[]>)
 })
 
-/** Grouping helpers */
-const groupedMap = computed(() => {
-  if (!props.grouped) return {}
-  const map = {}
-  for (const it of filteredItems.value) {
-    const g = it[props.groupKey] ?? '_'
-    if (!map[g]) map[g] = []
-    map[g].push(it)
-  }
-  return map
-})
-const flatList = computed(() => (props.grouped ? Object.values(groupedMap.value).flat() : filteredItems.value))
-const visibleItems = computed(() => (props.grouped ? flatList.value : filteredItems.value))
-const groupLabel = (key) => props.groups?.[key] ?? key
+const itemKey = (item: DropdownItem, idx: number) => (item[props.valueKey as string] ?? idx) as number | string
+const isSelected = (item: DropdownItem) => props.selected === item[props.valueKey as string]
 
-/** Sélection courante */
-const isSelected = (item) =>
-  props.modelValue != null &&
-  (props.modelValue?.[props.valueKey] ?? props.modelValue) === item[props.valueKey]
-
-const selectedLabel = computed(() => {
-  const found = flatList.value.find(isSelected)
-  return found ? found[props.labelKey] : (typeof props.modelValue === 'object' ? props.modelValue?.[props.labelKey] : null)
-})
-
-/** Indices */
-const itemKey = (item, idx) => item[props.valueKey] ?? idx
-const flatIndex = (item) => flatList.value.findIndex((x) => x === item)
-
-/** Open/close */
-const openMenu = () => {
-  if (open.value) return
-  open.value = true
-  emit('open')
-  if (props.highlightFirst && visibleItems.value.length) highlightedIndex.value = 0
+const highlight = (key: number | string) => {
+  highlightedId.value = optionId(key)
 }
-const closeMenu = () => {
-  if (!open.value) return
-  open.value = false
-  emit('close')
-}
-const toggle = () => (open.value ? closeMenu() : openMenu())
-
-/** Sélection */
-const select = (item) => {
-  emit('update:modelValue', item)
+const select = (item: DropdownItem) => {
   emit('select', item)
-  closeMenu()
+  emit('request-close')
 }
 
-/** Recherche asynchrone (debounce) */
-let t = null
-const emitSearch = () => {
-  if (!props.searchable) return
-  if (t) clearTimeout(t)
-  t = setTimeout(() => emit('search', query.value), 200)
-}
-
-/** Clavier */
-const onKeydown = (e) => {
-  if (!open.value && ['ArrowDown', 'Enter', ' '].includes(e.key)) {
-    openMenu()
-    return
-  }
-  if (!open.value) return
-  if (e.key === 'ArrowDown') {
-    highlightedIndex.value = Math.min(highlightedIndex.value + 1, visibleItems.value.length - 1)
-  } else if (e.key === 'ArrowUp') {
-    highlightedIndex.value = Math.max(highlightedIndex.value - 1, 0)
-  } else if (e.key === 'Enter') {
-    const item = visibleItems.value[highlightedIndex.value]
+const onKeydown = (event: KeyboardEvent) => {
+  if (!props.visible || !visibleItems.value.length) return
+  const currentIdx = highlightedId.value
+    ? visibleItems.value.findIndex(item => optionId(itemKey(item, 0)) === highlightedId.value)
+    : -1
+  if (event.key === 'ArrowDown') {
+    const next = Math.min(currentIdx + 1, visibleItems.value.length - 1)
+    highlight(next)
+  } else if (event.key === 'ArrowUp') {
+    const prev = Math.max(currentIdx - 1, 0)
+    highlight(prev)
+  } else if (event.key === 'Enter' && currentIdx >= 0) {
+    const item = visibleItems.value[currentIdx]
     if (item) select(item)
-  } else if (e.key === 'Escape' || e.key === 'Tab') {
-    closeMenu()
+  } else if (event.key === 'Escape') {
+    emit('request-close')
   }
 }
 
-/** Clic extérieur */
-const onClickOutside = (e) => {
-  if (!root.value) return
-  if (!root.value.contains(e.target)) closeMenu()
+const handlePointerDown = (event: MouseEvent) => {
+  if (!props.visible || !listRef.value) return
+  if (!listRef.value.contains(event.target as Node)) emit('request-close')
 }
-onMounted(() => document.addEventListener('click', onClickOutside))
-onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 
-/** Sync quand la liste change */
-watch(visibleItems, () => {
-  if (props.highlightFirst && open.value) highlightedIndex.value = visibleItems.value.length ? 0 : -1
-})
+watch(
+  () => props.visible,
+  visible => {
+    if (!visible) highlightedId.value = null
+  },
+)
+
+onMounted(() => document.addEventListener('pointerdown', handlePointerDown))
+onBeforeUnmount(() => document.removeEventListener('pointerdown', handlePointerDown))
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 120ms ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

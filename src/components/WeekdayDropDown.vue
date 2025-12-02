@@ -1,7 +1,11 @@
 <!-- WeekdayDropdown.vue -->
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import DropdownList from '@/components/DropdownList.vue'
+import Button from './Button.vue'
+
+import iconDropdown from '@/assets/images/icon-dropdown.svg'
+import type { DropdownItem } from '@/types'
 
 const days = [
   { label: 'Lundi', value: 'mon' },
@@ -13,17 +17,32 @@ const days = [
   { label: 'Dimanche', value: 'sun' },
 ]
 
-const selectedDay = ref(null)
+const selectedDay = ref<DropdownItem | null>(null)
+const open = ref(false)
+
+const handleSelect = (item: DropdownItem) => {
+  selectedDay.value = item
+  open.value = false
+}
+
+const handleClick = () => {
+  open.value = !open.value
+  console.log('Dropdown open:', open.value)
+}
+
 </script>
 
 <template>
-  <label class="mb-1 block text-sm font-medium">Jour</label>
+  <Button 
+    variant="primary"
+    :icon="iconDropdown" 
+    icon-position="right"
+    @click="handleClick">{{ selectedDay?.label }}</Button>
   <DropdownList
-    v-model="selectedDay"
+    :selected="selectedDay?.value"
     :items="days"
-    placeholder="Choisir un jour…"
+    :visible="open"
+    @select="handleSelect"
+    @request-close="open = false"
   />
-  <p class="mt-3 text-sm">
-    Selection: <strong>{{ selectedDay?.label ?? '—' }}</strong>
-  </p>
 </template>
