@@ -2,7 +2,7 @@
 <template>
   <transition name="fade">
     <ul
-      v-if="visible && visibleItems.length"
+      v-if="visible"
       ref="listRef"
       class=" start-0 top-20 z-50 mt-2 w-[214px] rounded-lg border border-neutral-700 bg-neutral-800 text-sm shadow-xl scrollbar-hidden"
       role="listbox"
@@ -11,23 +11,66 @@
       @keydown.stop.prevent="onKeydown"
     >
       <template v-if="isGrouped">
-        <li v-for="(groupItems, group) in groupedItems" :key="group">
+        <li
+          v-for="(groupItems, group) in groupedItems"
+          :key="group"
+          class="border-t border-neutral-700 first:border-t-0"
+          role="presentation"
+        >
           <slot name="group-label" :group="group">
-            <div class="sticky top-0 bg-neutral-800/90 px-3 py-2 text-xs font-semibold text-neutral-300">
+            <div
+              v-if="group"
+              class="sticky top-0 bg-neutral-800/90 px-3 py-2 text-xs font-semibold text-neutral-300"
+            >
               {{ group }}
             </div>
           </slot>
 
+          <ul role="group" :aria-label="group || undefined">
+            <li
+              v-for="(item, idx) in groupItems"
+              :key="itemKey(item, idx)"
+            >
+              <button
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-neutral-100 hover:bg-neutral-700"
+                :class="{ 'text-blue-400': isSelected(item), 'bg-neutral-700': highlightedId === optionId(itemKey(item, idx)) }"
+                type="button"
+                role="option"
+                :id="optionId(itemKey(item, idx))"
+                :aria-selected="isSelected(item)"
+                @mouseenter="highlight(itemKey(item, idx))"
+                @click="select(item)"
+              >
+                <slot name="item" :item="item" :selected="isSelected(item)">
+                  <span class="truncate">{{ item[labelKey] }}</span>
+                </slot>
+              </button>
+            </li>
+          </ul>
+        </li>
+      </template>
+
+      <template
+          v-else-if="!visibleItems.length"
+      >
+        <li class="w-full px-3 py-3 text-center text-xs text-neutral-400">
+          {{ emptyText }}
+        </li>
+      </template>
+
+      <template v-else>
+        <li
+          v-for="(item, idx) in visibleItems"
+          :key="itemKey(item, idx)"
+        >
           <button
-            v-for="(item, idx) in groupItems"
-            :key="itemKey(item, idx)"
             class="flex w-full items-center justify-between px-3 py-2 text-left text-neutral-100 hover:bg-neutral-700"
-            :class="{ 'text-blue-400': isSelected(item), 'bg-neutral-700': highlightedId === optionId(itemKey(item, idx)) }"
+            :class="{ 'text-blue-400': isSelected(item), 'bg-neutral-700': highlightedId === optionId(idx) }"
             type="button"
             role="option"
-            :id="optionId(itemKey(item, idx))"
+            :id="optionId(idx)"
             :aria-selected="isSelected(item)"
-            @mouseenter="highlight(itemKey(item, idx))"
+            @mouseenter="highlight(idx)"
             @click="select(item)"
           >
             <slot name="item" :item="item" :selected="isSelected(item)">
@@ -35,32 +78,6 @@
             </slot>
           </button>
         </li>
-      </template>
-
-      <template
-          v-else-if="visible && !visibleItems.length"
-          class="absolute z-50  w-full rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-3 text-center text-xs text-neutral-400"
-      >
-          {{ emptyText }}
-      </template>
-
-      <template v-else>
-        <button
-          v-for="(item, idx) in visibleItems"
-          :key="itemKey(item, idx)"
-          class="flex w-full items-center justify-between px-3 py-2 text-left text-neutral-100 hover:bg-neutral-700"
-          :class="{ 'text-blue-400': isSelected(item), 'bg-neutral-700': highlightedId === optionId(idx) }"
-          type="button"
-          role="option"
-          :id="optionId(idx)"
-          :aria-selected="isSelected(item)"
-          @mouseenter="highlight(idx)"
-          @click="select(item)"
-        >
-          <slot name="item" :item="item" :selected="isSelected(item)">
-            <span class="truncate">{{ item[labelKey] }}</span>
-          </slot>
-        </button>
       </template>
 
     </ul>
@@ -119,7 +136,8 @@ const groupedItems = computed<Record<string, DropdownItem[]>>(() => {
   if (!isGrouped.value) return {}
   const key = props.groupKey as keyof DropdownItem
   return visibleItems.value.reduce((groups, item) => {
-    const g = (item[key] ?? '_').toString()
+    const rawGroup = (item[key] ?? '').toString()
+    const g = rawGroup === '_' ? '' : rawGroup
     if (!groups[g]) groups[g] = []
     groups[g].push(item)
     return groups

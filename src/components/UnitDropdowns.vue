@@ -43,18 +43,25 @@ const handleSelect = (item: DropdownItem) => {
 </script>
 
 <template>
-  <Button 
-    variant="primary" 
-    @click="handleClick()" 
-    :icon="iconUnits" 
-    icon-position="right">Units</Button>
+  <div>
+    <Button 
+      variant="primary" 
+      @click="handleClick()" 
+      :icon="iconUnits" 
+      icon-position="right">Units</Button>
+  </div>
   <DropdownList
     v-model="selectedUnit"
     :items="unitItems"
-    :groups="groups"
-    grouped
+    group-key="group"
     @select="handleSelect"
     :visible="open"
     placeholder="Choisir une unité…"
-  />
+  >
+    <template #group-label="{ group }">
+      <div class="sticky top-0 bg-neutral-800/90 px-3 py-2 text-xs font-semibold text-neutral-300">
+        {{ groups[group] ?? group }}
+      </div>
+    </template>
+  </DropdownList>
 </template>

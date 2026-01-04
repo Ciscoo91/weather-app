@@ -7,7 +7,7 @@
         <component
             v-if="icon && iconPosition === 'left'"
             :is="icon"
-            class="w-5 h-5 mr-2"
+            class="mr-2"
         />
 
         <slot />
@@ -16,7 +16,7 @@
         <component
             v-if="icon && iconPosition === 'right'"
             :is="icon"
-            class="w-5 h-5 ml-2"
+            class="ml-2"
         />
     </button>
 

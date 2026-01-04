@@ -17,7 +17,7 @@ const days = [
   { label: 'Dimanche', value: 'sun' },
 ]
 
-const selectedDay = ref<DropdownItem | null>(null)
+const selectedDay = ref<DropdownItem | null>({ label: 'Lundi', value: 'mon' })
 const open = ref(false)
 
 const handleSelect = (item: DropdownItem) => {
@@ -33,11 +33,13 @@ const handleClick = () => {
 </script>
 
 <template>
-  <Button 
-    variant="primary"
-    :icon="iconDropdown" 
-    icon-position="right"
-    @click="handleClick">{{ selectedDay?.label }}</Button>
+  <div>
+    <Button 
+      variant="primary"
+      :icon="iconDropdown" 
+      icon-position="right"
+      @click="handleClick">{{ selectedDay?.label }}</Button>
+  </div>
   <DropdownList
     :selected="selectedDay?.value"
     :items="days"
