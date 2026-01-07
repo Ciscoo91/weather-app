@@ -4,7 +4,7 @@
     <ul
       v-if="visible"
       ref="listRef"
-      class=" start-0 top-20 z-50 mt-2 w-[214px] rounded-lg border border-neutral-700 bg-neutral-800 text-sm shadow-xl scrollbar-hidden"
+      class=" start-0 top-20 z-50 mt-2 w-[214px] p-y-4 rounded-lg border border-neutral-700 bg-neutral-800 text-sm shadow-xl scrollbar-hidden flex flex-col items-center"
       role="listbox"
       :aria-activedescendant="activeId"
       :style="{ maxHeight, overflowY: 'auto' }"
@@ -14,7 +14,7 @@
         <li
           v-for="(groupItems, group) in groupedItems"
           :key="group"
-          class="border-t border-neutral-700 first:border-t-0"
+          class="border-t border-neutral-700 first:border-t-0 w-[198px] rounded-md"
           role="presentation"
         >
           <slot name="group-label" :group="group">
@@ -30,9 +30,10 @@
             <li
               v-for="(item, idx) in groupItems"
               :key="itemKey(item, idx)"
+              class="rounded-md"
             >
               <button
-                class="flex w-full items-center justify-between px-3 py-2 text-left text-neutral-100 hover:bg-neutral-700"
+                class="flex w-full items-center justify-between px-3 py-2 text-left text-neutral-100 hover:bg-neutral-700 rounded-md"
                 :class="{ 'text-blue-400': isSelected(item), 'bg-neutral-700': highlightedId === optionId(itemKey(item, idx)) }"
                 type="button"
                 role="option"
@@ -62,9 +63,10 @@
         <li
           v-for="(item, idx) in visibleItems"
           :key="itemKey(item, idx)"
+          class="w-[198px] rounded-md"
         >
           <button
-            class="flex w-full items-center justify-between px-3 py-2 text-left text-neutral-100 hover:bg-neutral-700"
+            class="flex w-full items-center justify-between px-3 py-2 text-left text-neutral-100 hover:bg-neutral-700 rounded-md"
             :class="{ 'text-blue-400': isSelected(item), 'bg-neutral-700': highlightedId === optionId(idx) }"
             type="button"
             role="option"
